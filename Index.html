@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>Checklist SEAT León ST — Inspección de compra</title>
+  <style>
+    :root{
+      --bg:#070b14;
+      --surface:#0e1526;
+      --surface-2:#151f34;
+      --surface-3:#1c2942;
+      --text:#f4f7fb;
+      --muted:#9aa7bd;
+      --line:rgba(255,255,255,.09);
+      --accent:#6ee7ff;
+      --accent-2:#8b5cf6;
+      --ok:#32d583;
+      --warn:#fdb022;
+      --bad:#f97066;
+      --pending:#667085;
+      --shadow:0 18px 45px rgba(0,0,0,.3);
+      --radius:20px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20% -10%, rgba(139,92,246,.22), transparent 36rem),
+        radial-gradient(circle at 100% 0%, rgba(110,231,255,.16), transparent 34rem),
+        var(--bg);
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height:100vh;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    button,input,textarea{font:inherit}
+    button{color:inherit}
+    .shell{width:min(1180px,100%); margin:0 auto; padding:20px 16px 110px}
+    .glass{
+      background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(18px);
+    }
+
+    header{
+      border-radius:28px;
+      padding:22px;
+      position:relative;
+      overflow:hidden;
+    }
+    header::after{
+      content:"";
+      position:absolute;
+      width:320px;height:320px;border-radius:50%;
+      right:-150px;top:-180px;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      filter:blur(20px);opacity:.18;
+      pointer-events:none;
+    }
+    .eyebrow{
+      color:var(--accent);
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      font-size:.72rem;
+      font-weight:800;
+    }
+    h1{margin:.35rem 0 .25rem;font-size:clamp(1.7rem,5vw,3.15rem);line-height:1.02}
+    .subtitle{margin:0;color:var(--muted);max-width:760px;line-height:1.5}
+    .vehicle-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-top:20px;
+      position:relative;
+      z-index:1;
+    }
+    .field{
+      background:rgba(4,8,17,.46);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .field label{display:block;color:var(--muted);font-size:.72rem;margin-bottom:4px}
+    .field input{
+      width:100%;border:0;outline:0;background:transparent;color:var(--text);
+      font-weight:750;font-size:.98rem;
+    }
+
+    .dashboard{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .progress-card,.timer-card{border-radius:var(--radius);padding:18px}
+    .progress-head,.timer-head{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px
+    }
+    .card-title{font-size:.86rem;font-weight:800;color:#dce4f1}
+    .progress-track{
+      height:12px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;
+      border:1px solid rgba(255,255,255,.06)
+    }
+    .progress-fill{
+      height:100%;width:0;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      border-radius:inherit;transition:width .3s ease
+    }
+    .stat-row{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px
+    }
+    .stat{
+      background:rgba(0,0,0,.17);border:1px solid var(--line);border-radius:13px;padding:10px;text-align:center
+    }
+    .stat strong{font-size:1.1rem;display:block}
+    .stat span{font-size:.7rem;color:var(--muted)}
+    .timer{
+      font-variant-numeric:tabular-nums;
+      font-size:clamp(1.8rem,5vw,2.7rem);
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+    .timer.low{color:var(--warn)}
+    .timer.over{color:var(--bad)}
+    .timer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--text);
+      border-radius:12px;padding:10px 13px;font-weight:780;cursor:pointer;transition:.18s ease;
+    }
+    .btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.2)}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-2),#525ce7);border-color:transparent}
+    .btn.ghost{background:rgba(255,255,255,.035)}
+    .btn.danger{color:#ffd6d2;border-color:rgba(249,112,102,.35);background:rgba(249,112,102,.09)}
+    .btn.small{padding:7px 9px;font-size:.78rem;border-radius:10px}
+
+    .toolbar{
+      position:sticky;top:10px;z-index:20;
+      margin:14px 0;border-radius:18px;padding:10px;
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap
+    }
+    .search{
+      flex:1 1 220px;display:flex;align-items:center;gap:8px;
+      background:rgba(4,8,17,.58);border:1px solid var(--line);border-radius:12px;padding:9px 11px
+    }
+    .search input{width:100%;border:0;outline:0;background:transparent;color:var(--text)}
+    .filters{display:flex;gap:6px;overflow:auto;scrollbar-width:none}
+    .filters::-webkit-scrollbar{display:none}
+    .chip{
+      white-space:nowrap;border:1px solid var(--line);background:rgba(255,255,255,.035);
+      padding:8px 10px;border-radius:999px;font-size:.76rem;font-weight:800;cursor:pointer
+    }
+    .chip.active{background:#ecfeff;color:#102027;border-color:#ecfeff}
+
+    .phase-list{display:grid;gap:12px}
+    details.phase{
+      border-radius:18px;overflow:hidden;
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018));
+      border:1px solid var(--line);
+    }
+    details.phase[open]{border-color:rgba(110,231,255,.22)}
+    summary{
+      list-style:none;cursor:pointer;padding:15px 16px;
+      display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;
+      user-select:none;
+    }
+    summary::-webkit-details-marker{display:none}
+    .phase-num{
+      width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+      background:linear-gradient(135deg,rgba(110,231,255,.18),rgba(139,92,246,.2));
+      border:1px solid rgba(110,231,255,.18);font-weight:900;color:#dffbff
+    }
+    .phase-title{font-weight:850}
+    .phase-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+    .phase-score{
+      min-width:66px;text-align:right;font-size:.78rem;color:var(--muted);font-weight:750
+    }
+    .phase-body{border-top:1px solid var(--line);padding:8px}
+
+    .check-item{
+      border:1px solid transparent;border-radius:15px;padding:11px;
+      display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;
+      transition:.2s ease;
+    }
+    .check-item + .check-item{margin-top:5px}
+    .check-item:hover{background:rgba(255,255,255,.025)}
+    .check-item[data-status="ok"]{background:rgba(50,213,131,.055);border-color:rgba(50,213,131,.13)}
+    .check-item[data-status="doubt"]{background:rgba(253,176,34,.06);border-color:rgba(253,176,34,.16)}
+    .check-item[data-status="fail"]{background:rgba(249,112,102,.07);border-color:rgba(249,112,102,.18)}
+    .item-text{line-height:1.35;font-size:.94rem}
+    .critical{
+      display:inline-flex;align-items:center;gap:5px;margin-left:7px;padding:2px 7px;border-radius:999px;
+      background:rgba(249,112,102,.12);color:#ffb2ac;font-size:.62rem;font-weight:900;letter-spacing:.04em;
+      vertical-align:middle;text-transform:uppercase
+    }
+    .item-actions{display:flex;gap:5px;align-items:center}
+    .status-btn{
+      width:34px;height:34px;padding:0;display:grid;place-items:center;
+      border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.035);cursor:pointer;
+      font-size:.9rem;font-weight:900
+    }
+    .status-btn.ok.active{background:var(--ok);color:#052d1a;border-color:var(--ok)}
+    .status-btn.doubt.active{background:var(--warn);color:#382200;border-color:var(--warn)}
+    .status-btn.fail.active{background:var(--bad);color:#3b0806;border-color:var(--bad)}
+    .note-toggle{
+      width:34px;height:34px;padding:0;display:grid;place-items:center;
+      border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.035);cursor:pointer
+    }
+    .note-wrap{grid-column:1/-1;display:none}
+    .note-wrap.open{display:block}
+    .note-wrap textarea{
+      width:100%;min-height:62px;resize:vertical;color:var(--text);
+      background:rgba(1,4,10,.42);border:1px solid var(--line);border-radius:11px;padding:9px;outline:none
+    }
+
+    .empty{
+      padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px;display:none
+    }
+
+    .decision{
+      margin-top:14px;border-radius:20px;padding:16px
+    }
+    .decision h2{font-size:1rem;margin:0 0 10px}
+    .decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .decision textarea{
+      width:100%;min-height:95px;resize:vertical;color:var(--text);
+      background:rgba(1,4,10,.4);border:1px solid var(--line);border-radius:13px;padding:11px;outline:none
+    }
+    .verdict-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .verdict{
+      flex:1;min-width:120px;border:1px solid var(--line);border-radius:13px;padding:11px;
+      background:rgba(255,255,255,.03);cursor:pointer;font-weight:850
+    }
+    .verdict.active[data-verdict="buy"]{background:rgba(50,213,131,.18);border-color:var(--ok)}
+    .verdict.active[data-verdict="review"]{background:rgba(253,176,34,.16);border-color:var(--warn)}
+    .verdict.active[data-verdict="discard"]{background:rgba(249,112,102,.17);border-color:var(--bad)}
+
+    .bottom-bar{
+      position:fixed;left:0;right:0;bottom:0;z-index:30;
+      background:rgba(7,11,20,.88);backdrop-filter:blur(18px);
+      border-top:1px solid var(--line);padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+    }
+    .bottom-inner{
+      width:min(1180px,100%);margin:0 auto;display:flex;gap:8px;align-items:center
+    }
+    .bottom-summary{flex:1;min-width:0}
+    .bottom-summary strong{display:block;font-size:.86rem}
+    .bottom-summary span{font-size:.7rem;color:var(--muted)}
+    .bottom-actions{display:flex;gap:7px}
+    .toast{
+      position:fixed;left:50%;bottom:90px;transform:translate(-50%,18px);
+      padding:10px 14px;border-radius:12px;background:#f8fafc;color:#0f172a;
+      font-weight:800;opacity:0;pointer-events:none;transition:.22s ease;z-index:50;box-shadow:var(--shadow)
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    @media (max-width:820px){
+      .vehicle-grid{grid-template-columns:1fr 1fr}
+      .dashboard{grid-template-columns:1fr}
+      .decision-grid{grid-template-columns:1fr}
+      .toolbar{top:6px}
+    }
+    @media (max-width:560px){
+      .shell{padding-inline:10px}
+      header{padding:18px}
+      .vehicle-grid{grid-template-columns:1fr 1fr}
+      .stat-row{grid-template-columns:repeat(2,1fr)}
+      summary{grid-template-columns:auto 1fr}
+      .phase-score{grid-column:2;text-align:left}
+      .check-item{grid-template-columns:1fr}
+      .item-actions{justify-content:flex-start}
+      .note-wrap{grid-column:1}
+      .bottom-summary span{display:none}
+      .bottom-actions .btn span{display:none}
+    }
+
+    @media print{
+      body{background:white;color:black}
+      .shell{width:100%;padding:0}
+      header,.dashboard,.toolbar,.bottom-bar,.timer-card,.btn,.item-actions,.note-toggle{display:none!important}
+      details.phase{break-inside:avoid;border:1px solid #ddd;background:white}
+      details.phase:not([open]) .phase-body{display:block}
+      .phase-body{display:block!important}
+      .check-item{border-bottom:1px solid #eee;border-radius:0;background:white!important}
+      .item-text{color:black}
+      .critical{border:1px solid #bbb;color:#333;background:#eee}
+      .note-wrap.open{display:block}
+      .note-wrap textarea{border:0;color:black;background:white;padding:0;min-height:auto}
+      .decision{border:1px solid #ddd;background:white}
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="glass">
+      <div class="eyebrow">Inspección de compra · 2 horas</div>
+      <h1>SEAT León ST 1.4 TSI ACT</h1>
+      <p class="subtitle">Checklist práctica para revisar el coche en casa del propietario, registrar dudas y salir con una decisión ordenada.</p>
+
+      <div class="vehicle-grid">
+        <div class="field"><label>Matrícula</label><input id="plate" value="6251 JKS" /></div>
+        <div class="field"><label>Kilometraje anunciado</label><input id="mileage" value="97.000 km" /></div>
+        <div class="field"><label>Precio</label><input id="price" value="12.300 €" /></div>
+        <div class="field"><label>Vendedor / ubicación</label><input id="seller" placeholder="Nombre o localidad" /></div>
+      </div>
+    </header>
+
+    <section class="dashboard">
+      <article class="progress-card glass">
+        <div class="progress-head">
+          <div>
+            <div class="card-title">Progreso de la inspección</div>
+            <div id="progressText" style="color:var(--muted);font-size:.78rem;margin-top:3px">0 de 0 pruebas registradas</div>
+          </div>
+          <strong id="progressPct">0%</strong>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="stat-row">
+          <div class="stat"><strong id="okCount">0</strong><span>Bien</span></div>
+          <div class="stat"><strong id="doubtCount">0</strong><span>Dudas</span></div>
+          <div class="stat"><strong id="failCount">0</strong><span>Fallos</span></div>
+          <div class="stat"><strong id="pendingCount">0</strong><span>Pendientes</span></div>
+        </div>
+      </article>
+
+      <article class="timer-card glass">
+        <div class="timer-head">
+          <div>
+            <div class="card-title">Cronómetro de visita</div>
+            <div style="color:var(--muted);font-size:.76rem;margin-top:3px">Objetivo máximo: 2:00:00</div>
+          </div>
+          <span id="timerState" style="font-size:.72rem;color:var(--muted)">Listo</span>
+        </div>
+        <div class="timer" id="timer">02:00:00</div>
+        <div class="timer-actions">
+          <button class="btn primary" id="timerToggle">▶ Empezar</button>
+          <button class="btn ghost" id="timerReset">↺ Reiniciar</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="toolbar glass">
+      <label class="search">
+        <span>⌕</span>
+        <input id="search" type="search" placeholder="Buscar una prueba…" />
+      </label>
+      <div class="filters" id="filters">
+        <button class="chip active" data-filter="all">Todas</button>
+        <button class="chip" data-filter="pending">Pendientes</button>
+        <button class="chip" data-filter="doubt">Dudas</button>
+        <button class="chip" data-filter="fail">Fallos</button>
+        <button class="chip" data-filter="critical">Imprescindibles</button>
+      </div>
+    </section>
+
+    <section id="phaseList" class="phase-list"></section>
+    <div id="empty" class="empty">No hay pruebas que coincidan con el filtro.</div>
+
+    <section class="decision glass">
+      <h2>Conclusión de la visita</h2>
+      <div class="decision-grid">
+        <textarea id="generalNotes" placeholder="Notas generales, sensaciones, ruidos, cosas que preguntar o negociar…"></textarea>
+        <textarea id="costNotes" placeholder="Gastos previsibles: neumáticos, frenos, mantenimiento, chapa, revisión en taller…"></textarea>
+      </div>
+      <div class="verdict-row">
+        <button class="verdict" data-verdict="buy">✓ Seguir adelante</button>
+        <button class="verdict" data-verdict="review">⚠ Revisar en taller</button>
+        <button class="verdict" data-verdict="discard">✕ Descartar</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="bottom-bar">
+    <div class="bottom-inner">
+      <div class="bottom-summary">
+        <strong id="bottomTitle">Inspección sin completar</strong>
+        <span id="bottomText">Los cambios se guardan automáticamente en este dispositivo.</span>
+      </div>
+      <div class="bottom-actions">
+        <button class="btn small ghost" id="exportBtn">⇩ <span>Exportar</span></button>
+        <button class="btn small ghost" id="printBtn">⎙ <span>Imprimir</span></button>
+        <button class="btn small danger" id="clearBtn">⌫ <span>Borrar</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const phases = [
+  {
+    title:"Antes de empezar",
+    minutes:3,
+    items:[
+      ["Confirmar que el coche no se ha arrancado antes de tu llegada.", true],
+      ["Comprobar que la visita se hace con suficiente luz natural.", false],
+      ["Confirmar que podrás conducirlo unos 30 minutos.", true],
+      ["Pedir documentación, libro de mantenimiento, facturas y las dos llaves.", true]
+    ]
+  },
+  {
+    title:"Documentación e identidad",
+    minutes:10,
+    items:[
+      ["Confirmar que la matrícula es 6251 JKS.", true],
+      ["Comprobar que el VIN del coche coincide con ficha técnica y permiso de circulación.", true],
+      ["Confirmar versión: SEAT León ST 1.4 TSI ACT FR Plus manual.", true],
+      ["Anotar el kilometraje actual y compararlo con el anuncio: 97.000 km.", true],
+      ["Revisar la última ITV, resultado y kilometraje anotado.", true],
+      ["Comprobar que el kilometraje actual es coherente con ITV y facturas.", true],
+      ["Revisar libro de mantenimiento y facturas por fecha y kilómetros.", true],
+      ["Preguntar cuándo se cambiaron aceite, filtros, bujías y líquido de frenos.", false],
+      ["Preguntar por la correa de distribución y pedir factura si se cambió.", true],
+      ["Preguntar por consumo de aceite o refrigerante.", true],
+      ["Preguntar por golpes, repintados, turbo, embrague, ACT y techo panorámico.", true],
+      ["Confirmar que el vendedor es el titular o está autorizado para venderlo.", true]
+    ]
+  },
+  {
+    title:"Primera impresión",
+    minutes:3,
+    items:[
+      ["Tocar el capó: debe estar frío.", true],
+      ["Mirar el suelo bajo el coche y buscar manchas recientes.", true],
+      ["Observar si el coche está inclinado hacia un lado.", false],
+      ["Mirar desde varios metros y detectar diferencias evidentes de color o alineación.", true]
+    ]
+  },
+  {
+    title:"Carrocería y exterior",
+    minutes:12,
+    items:[
+      ["Comparar color y brillo entre capó, aletas, puertas y paragolpes.", true],
+      ["Mirar los laterales de perfil para detectar ondulaciones.", true],
+      ["Comprobar que las holguras entre paneles son uniformes.", true],
+      ["Buscar pintura en gomas, molduras o faros.", false],
+      ["Revisar tornillos visibles del capó y aletas por marcas de desmontaje.", false],
+      ["Abrir y cerrar las cuatro puertas y el portón.", false],
+      ["Buscar óxido en bordes, pasos de rueda y portón.", false],
+      ["Revisar golpes o grietas en el parabrisas.", true],
+      ["Comprobar que los faros LED no tienen humedad ni fijaciones rotas.", true],
+      ["Probar cortas, largas, intermitentes, freno, marcha atrás e iluminación de matrícula.", false],
+      ["Probar limpiaparabrisas y lavaparabrisas delanteros y traseros.", false]
+    ]
+  },
+  {
+    title:"Neumáticos, llantas y frenos",
+    minutes:8,
+    items:[
+      ["Comprobar que los neumáticos de cada eje son iguales.", false],
+      ["Revisar dibujo suficiente en los cuatro neumáticos.", true],
+      ["Buscar grietas, cortes o bultos en los flancos.", true],
+      ["Revisar desgaste irregular, especialmente por el borde interior.", true],
+      ["Comprobar si algún neumático está mucho más gastado que los demás.", true],
+      ["Revisar golpes o deformaciones en las llantas.", false],
+      ["Mirar los discos y buscar surcos profundos o reborde muy marcado.", false],
+      ["Comprobar visualmente que las pastillas no estén agotadas.", false]
+    ]
+  },
+  {
+    title:"Maletero y humedad",
+    minutes:5,
+    items:[
+      ["Levantar el suelo del maletero.", true],
+      ["Buscar agua, humedad, óxido o marcas de filtración.", true],
+      ["Revisar el hueco del kit antipinchazos o rueda de emergencia.", false],
+      ["Buscar deformaciones, soldaduras o reparaciones extrañas.", true],
+      ["Comprobar que incluye kit antipinchazos y revisar su caducidad.", false],
+      ["Probar bandeja, cortinilla y abatimiento de asientos.", false],
+      ["Comprobar que el portón se mantiene abierto.", false]
+    ]
+  },
+  {
+    title:"Interior y desgaste",
+    minutes:8,
+    items:[
+      ["Comparar el desgaste interior con los 97.000 km anunciados.", true],
+      ["Revisar volante, pomo, fuelle del cambio y pedales.", true],
+      ["Revisar el lateral del asiento del conductor.", true],
+      ["Buscar olor a humedad, tabaco o ambientador excesivo.", true],
+      ["Levantar alfombrillas y tocar la moqueta delantera y trasera.", true],
+      ["Revisar techo y pilares por manchas de agua.", true],
+      ["Probar cinturones: deben recoger y bloquear correctamente.", false],
+      ["Comprobar que no hay mandos o piezas rotas.", false]
+    ]
+  },
+  {
+    title:"Techo panorámico",
+    minutes:5,
+    items:[
+      ["Revisar las juntas desde fuera.", true],
+      ["Abrir y cerrar completamente el techo dos veces.", true],
+      ["Escuchar crujidos, chasquidos o rozamientos.", true],
+      ["Comprobar que no se detiene ni retrocede sin motivo.", true],
+      ["Probar la cortinilla interior.", false],
+      ["Buscar humedad en las cuatro esquinas y pilares.", true],
+      ["Con permiso, echar poca agua sobre el marco y comprobar que no entra.", false]
+    ]
+  },
+  {
+    title:"Electrónica y equipamiento",
+    minutes:7,
+    items:[
+      ["Dar contacto y comprobar que se encienden los testigos de motor, airbag, ABS y ESP.", true],
+      ["Arrancar después y confirmar que los testigos se apagan.", true],
+      ["Comprobar que no hay mensajes de error en el cuadro.", true],
+      ["Probar los cuatro elevalunas y el cierre centralizado.", false],
+      ["Probar ambas llaves.", true],
+      ["Probar espejos y mandos del volante.", false],
+      ["Probar pantalla, radio, altavoces y Bluetooth.", false],
+      ["Probar cámara trasera y sensores de aparcamiento.", true],
+      ["Probar climatizador en frío y comprobar que enfría por ambos lados.", true],
+      ["Probar calefacción, luneta térmica, USB y toma de 12 V.", false]
+    ]
+  },
+  {
+    title:"Motor en frío",
+    minutes:10,
+    items:[
+      ["Con el coche plano, comprobar nivel de aceite.", true],
+      ["Mirar bajo el tapón de aceite y buscar emulsión espesa en cantidad.", true],
+      ["Comprobar nivel y aspecto del refrigerante.", true],
+      ["Buscar restos secos de refrigerante alrededor del vaso de expansión.", true],
+      ["Buscar zonas húmedas de aceite y mirar bajo el motor con la linterna.", true],
+      ["Pedir al propietario que arranque mientras tú observas.", true],
+      ["Comprobar que arranca al primer intento sin acelerar.", true],
+      ["Escuchar ruidos metálicos fuertes durante los primeros segundos.", true],
+      ["Comprobar que el ralentí se estabiliza y no tiembla demasiado.", true],
+      ["Mirar el escape: no debe salir humo azul ni negro persistente.", true],
+      ["Confirmar que se apagan todos los testigos.", true],
+      ["Escuchar silbidos, golpes, traqueteos o chirridos anormales.", true],
+      ["Encender el climatizador y comprobar que no provoca una vibración exagerada.", false]
+    ]
+  },
+  {
+    title:"Antes de salir",
+    minutes:4,
+    items:[
+      ["Pisar el embrague varias veces: no debe chirriar, atascarse ni estar exageradamente duro.", true],
+      ["Engranar primera y marcha atrás: no deben rascar.", true],
+      ["Mover la palanca por todas las marchas.", false],
+      ["Girar el volante de tope a tope y escuchar golpes o crujidos.", true],
+      ["Mantener pisado el freno y comprobar que el pedal no se hunde lentamente.", true]
+    ]
+  },
+  {
+    title:"Prueba de conducción",
+    minutes:30,
+    items:[
+      ["Hacer varias salidas en primera y comprobar que el embrague no vibra ni da tirones.", true],
+      ["Hacer una maniobra en marcha atrás.", false],
+      ["Probar una salida en ligera pendiente.", true],
+      ["Girar completamente a ambos lados y escuchar clics.", true],
+      ["Pasar despacio por un badén y escuchar golpes de suspensión.", true],
+      ["Comprobar si el techo panorámico cruje al pasar por firme irregular.", false],
+      ["Probar todas las marchas y revisar especialmente primera, segunda y marcha atrás.", true],
+      ["Comprobar que ninguna marcha rasca ni se sale.", true],
+      ["Escuchar ruidos al pisar o soltar el embrague.", true],
+      ["En tercera o cuarta a bajas rpm, acelerar y comprobar que velocidad y rpm suben juntas.", true],
+      ["Acelerar desde unas 1.500 rpm y comprobar una entrega de potencia continua.", true],
+      ["Buscar tirones entre 1.500 y 3.000 rpm.", true],
+      ["Escuchar silbidos exagerados del turbo o pérdidas repentinas de potencia.", true],
+      ["A velocidad constante, comprobar que el ACT no provoca tirones ni vibraciones.", true],
+      ["Vigilar que no se enciendan los testigos de motor o EPC.", true],
+      ["Mirar por el espejo y comprobar que no aparece humo al acelerar.", true],
+      ["Comprobar que el volante queda centrado al circular recto.", true],
+      ["Comprobar que el coche mantiene la trayectoria sin correcciones constantes.", true],
+      ["Detectar vibraciones en volante, asiento o carrocería.", true],
+      ["Escuchar zumbidos que aumenten con la velocidad.", false],
+      ["Realizar una frenada suave y otra moderada en un lugar seguro.", true],
+      ["Comprobar que frena recto, sin vibraciones ni ruido metálico.", true],
+      ["Circular por firme irregular y escuchar golpes delanteros o traseros.", true],
+      ["Alcanzar 90–120 km/h cuando sea legal y seguro.", false],
+      ["Probar el control de crucero adaptativo y cambiar la distancia.", true],
+      ["Comprobar que el ACC acelera y frena suavemente y no muestra error del radar.", true],
+      ["No provocar deliberadamente la frenada automática de emergencia.", true]
+    ]
+  },
+  {
+    title:"Motor en caliente",
+    minutes:8,
+    items:[
+      ["Dejar el motor al ralentí uno o dos minutos.", false],
+      ["Comprobar que el ralentí sigue estable y sin nuevos ruidos.", true],
+      ["Comprobar que no sale humo y que la temperatura es normal.", true],
+      ["Apagar, esperar dos o tres minutos y volver a arrancar.", true],
+      ["Comprobar que arranca fácilmente en caliente.", true],
+      ["Repetir una salida en primera y comprobar que el embrague no vibra.", true],
+      ["Buscar olor a embrague quemado, aceite o refrigerante.", true]
+    ]
+  },
+  {
+    title:"Inspección final",
+    minutes:5,
+    items:[
+      ["Abrir el capó y buscar nuevas fugas, humedad o vapor.", true],
+      ["Mirar debajo del coche y comprobar si han aparecido gotas.", true],
+      ["Buscar olor a refrigerante, aceite quemado o combustible.", true],
+      ["Acercar la mano a cada llanta sin tocar discos y detectar una rueda mucho más caliente.", false],
+      ["Buscar olor a freno recalentado.", false],
+      ["Revisar el cuadro por si ha aparecido algún aviso.", true],
+      ["Preguntar por cualquier defecto detectado y anotar la explicación.", false],
+      ["Confirmar que aceptaría una revisión en un taller antes de la compra.", true],
+      ["No abrir el vaso de expansión con el motor caliente.", true]
+    ]
+  }
+];
+
+const STORAGE_KEY = "seat-leon-checklist-v1";
+let state = {
+  answers:{},
+  notes:{},
+  fields:{},
+  generalNotes:"",
+  costNotes:"",
+  verdict:"",
+  timerRemaining:7200,
+  timerRunning:false,
+  timerUpdatedAt:null
+};
+let currentFilter = "all";
+let timerInterval = null;
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+function itemId(p,i){ return `p${p}-i${i}`; }
+
+function load(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if(saved) state = {...state, ...saved};
+  }catch(e){}
+  if(state.timerRunning && state.timerUpdatedAt){
+    const elapsed = Math.floor((Date.now() - state.timerUpdatedAt)/1000);
+    state.timerRemaining -= elapsed;
+    state.timerUpdatedAt = Date.now();
+  }
+}
+
+function save(){
+  state.fields = {
+    plate:$("#plate").value,
+    mileage:$("#mileage").value,
+    price:$("#price").value,
+    seller:$("#seller").value
+  };
+  state.generalNotes = $("#generalNotes").value;
+  state.costNotes = $("#costNotes").value;
+  if(state.timerRunning) state.timerUpdatedAt = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function render(){
+  const list = $("#phaseList");
+  list.innerHTML = phases.map((phase,p) => `
+    <details class="phase" data-phase="${p}" ${p < 2 ? "open" : ""}>
+      <summary>
+        <span class="phase-num">${p+1}</span>
+        <div>
+          <div class="phase-title">${phase.title}</div>
+          <div class="phase-meta">≈ ${phase.minutes} min · ${phase.items.length} pruebas</div>
+        </div>
+        <div class="phase-score" id="phaseScore-${p}">0/${phase.items.length}</div>
+      </summary>
+      <div class="phase-body">
+        ${phase.items.map(([text,critical],i) => {
+          const id=itemId(p,i);
+          const status=state.answers[id] || "pending";
+          const note=state.notes[id] || "";
+          return `
+            <article class="check-item" data-id="${id}" data-status="${status}" data-critical="${critical}" data-text="${escapeHtml(text.toLowerCase())}">
+              <div class="item-text">${text}${critical ? '<span class="critical">Clave</span>' : ''}</div>
+              <div class="item-actions" aria-label="Resultado">
+                <button class="status-btn ok ${status==="ok"?"active":""}" data-status-set="ok" title="Bien">✓</button>
+                <button class="status-btn doubt ${status==="doubt"?"active":""}" data-status-set="doubt" title="Duda">?</button>
+                <button class="status-btn fail ${status==="fail"?"active":""}" data-status-set="fail" title="Fallo">×</button>
+                <button class="note-toggle" title="Añadir nota">✎</button>
+              </div>
+              <div class="note-wrap ${note ? "open":""}">
+                <textarea placeholder="Añade una observación…">${escapeHtml(note)}</textarea>
+              </div>
+            </article>`;
+        }).join("")}
+      </div>
+    </details>
+  `).join("");
+
+  bindItems();
+  applyStateToFields();
+  updateAll();
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function applyStateToFields(){
+  const f=state.fields || {};
+  if(f.plate) $("#plate").value=f.plate;
+  if(f.mileage) $("#mileage").value=f.mileage;
+  if(f.price) $("#price").value=f.price;
+  if(f.seller) $("#seller").value=f.seller;
+  $("#generalNotes").value=state.generalNotes || "";
+  $("#costNotes").value=state.costNotes || "";
+  $$(".verdict").forEach(b=>b.classList.toggle("active",b.dataset.verdict===state.verdict));
+}
+
+function bindItems(){
+  $$(".check-item").forEach(item=>{
+    item.querySelectorAll("[data-status-set]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const id=item.dataset.id;
+        const next=btn.dataset.statusSet;
+        state.answers[id] = state.answers[id]===next ? "pending" : next;
+        item.dataset.status=state.answers[id];
+        item.querySelectorAll("[data-status-set]").forEach(b=>b.classList.toggle("active",b.dataset.statusSet===state.answers[id]));
+        if(state.answers[id]==="doubt" || state.answers[id]==="fail"){
+          item.querySelector(".note-wrap").classList.add("open");
+        }
+        save(); updateAll(); applyFilters();
+      });
+    });
+
+    const noteWrap=item.querySelector(".note-wrap");
+    const textarea=noteWrap.querySelector("textarea");
+    item.querySelector(".note-toggle").addEventListener("click",()=>{
+      noteWrap.classList.toggle("open");
+      if(noteWrap.classList.contains("open")) textarea.focus();
+    });
+    textarea.addEventListener("input",()=>{
+      state.notes[item.dataset.id]=textarea.value;
+      save();
+    });
+  });
+}
+
+function stats(){
+  const total=phases.reduce((n,p)=>n+p.items.length,0);
+  const values=Object.values(state.answers);
+  const ok=values.filter(v=>v==="ok").length;
+  const doubt=values.filter(v=>v==="doubt").length;
+  const fail=values.filter(v=>v==="fail").length;
+  const completed=ok+doubt+fail;
+  return {total,ok,doubt,fail,completed,pending:total-completed};
+}
+
+function updateAll(){
+  const s=stats();
+  const pct=Math.round((s.completed/s.total)*100);
+  $("#progressFill").style.width=pct+"%";
+  $("#progressPct").textContent=pct+"%";
+  $("#progressText").textContent=`${s.completed} de ${s.total} pruebas registradas`;
+  $("#okCount").textContent=s.ok;
+  $("#doubtCount").textContent=s.doubt;
+  $("#failCount").textContent=s.fail;
+  $("#pendingCount").textContent=s.pending;
+
+  phases.forEach((phase,p)=>{
+    const done=phase.items.filter((_,i)=>(state.answers[itemId(p,i)]||"pending")!=="pending").length;
+    const score=$("#phaseScore-"+p);
+    if(score) score.textContent=`${done}/${phase.items.length}`;
+  });
+
+  const criticalFails=[];
+  const criticalDoubts=[];
+  phases.forEach((phase,p)=>phase.items.forEach(([text,critical],i)=>{
+    const value=state.answers[itemId(p,i)];
+    if(critical && value==="fail") criticalFails.push(text);
+    if(critical && value==="doubt") criticalDoubts.push(text);
+  }));
+
+  if(criticalFails.length){
+    $("#bottomTitle").textContent=`${criticalFails.length} fallo${criticalFails.length>1?"s":""} clave`;
+    $("#bottomText").textContent="No cierres la compra sin aclararlos o revisar el coche en taller.";
+  }else if(criticalDoubts.length){
+    $("#bottomTitle").textContent=`${criticalDoubts.length} duda${criticalDoubts.length>1?"s":""} clave`;
+    $("#bottomText").textContent="Conviene resolverlas antes de entregar una señal.";
+  }else if(s.completed===s.total){
+    $("#bottomTitle").textContent="Inspección completada";
+    $("#bottomText").textContent="Revisa las notas y fija una conclusión.";
+  }else{
+    $("#bottomTitle").textContent=`${s.pending} pruebas pendientes`;
+    $("#bottomText").textContent="Los cambios se guardan automáticamente en este dispositivo.";
+  }
+}
+
+function applyFilters(){
+  const term=$("#search").value.trim().toLowerCase();
+  let any=false;
+  $$(".phase").forEach(phase=>{
+    let phaseVisible=false;
+    phase.querySelectorAll(".check-item").forEach(item=>{
+      const status=item.dataset.status;
+      const critical=item.dataset.critical==="true";
+      const matchesFilter =
+        currentFilter==="all" ||
+        (currentFilter==="pending" && status==="pending") ||
+        (currentFilter==="doubt" && status==="doubt") ||
+        (currentFilter==="fail" && status==="fail") ||
+        (currentFilter==="critical" && critical);
+      const matchesSearch=!term || item.dataset.text.includes(term);
+      const visible=matchesFilter && matchesSearch;
+      item.style.display=visible ? "grid" : "none";
+      if(visible){phaseVisible=true;any=true;}
+    });
+    phase.style.display=phaseVisible ? "block" : "none";
+    if((term || currentFilter!=="all") && phaseVisible) phase.open=true;
+  });
+  $("#empty").style.display=any ? "none" : "block";
+}
+
+function formatTime(total){
+  const sign=total<0?"-":"";
+  total=Math.abs(total);
+  const h=Math.floor(total/3600);
+  const m=Math.floor((total%3600)/60);
+  const s=total%60;
+  return `${sign}${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+
+function updateTimer(){
+  const el=$("#timer");
+  el.textContent=formatTime(state.timerRemaining);
+  el.classList.toggle("low",state.timerRemaining<=900 && state.timerRemaining>0);
+  el.classList.toggle("over",state.timerRemaining<0);
+  $("#timerState").textContent=state.timerRunning ? "En marcha" : "Pausado";
+  $("#timerToggle").textContent=state.timerRunning ? "Ⅱ Pausar" : "▶ Empezar";
+}
+
+function startTimerLoop(){
+  clearInterval(timerInterval);
+  if(state.timerRunning){
+    timerInterval=setInterval(()=>{
+      state.timerRemaining--;
+      state.timerUpdatedAt=Date.now();
+      updateTimer();
+      if(state.timerRemaining%10===0) save();
+    },1000);
+  }
+  updateTimer();
+}
+
+function toast(text){
+  const t=$("#toast");
+  t.textContent=text;t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+function buildExport(){
+  const s=stats();
+  const lines=[
+    "CHECKLIST DE INSPECCIÓN — SEAT LEÓN ST 1.4 TSI ACT",
+    `Matrícula: ${$("#plate").value}`,
+    `Kilometraje: ${$("#mileage").value}`,
+    `Precio: ${$("#price").value}`,
+    `Vendedor / ubicación: ${$("#seller").value || "-"}`,
+    "",
+    `Resumen: ${s.ok} bien · ${s.doubt} dudas · ${s.fail} fallos · ${s.pending} pendientes`,
+    ""
+  ];
+  phases.forEach((phase,p)=>{
+    lines.push(`## ${phase.title}`);
+    phase.items.forEach(([text,critical],i)=>{
+      const id=itemId(p,i);
+      const status=state.answers[id]||"pending";
+      const icon={ok:"[BIEN]",doubt:"[DUDA]",fail:"[FALLO]",pending:"[PENDIENTE]"}[status];
+      lines.push(`${icon}${critical?" [CLAVE]":""} ${text}`);
+      if(state.notes[id]) lines.push(`  Nota: ${state.notes[id]}`);
+    });
+    lines.push("");
+  });
+  lines.push("NOTAS GENERALES");
+  lines.push($("#generalNotes").value || "-");
+  lines.push("");
+  lines.push("GASTOS PREVISIBLES");
+  lines.push($("#costNotes").value || "-");
+  lines.push("");
+  lines.push(`VEREDICTO: ${state.verdict || "Sin decidir"}`);
+  return lines.join("\n");
+}
+
+load();
+render();
+updateTimer();
+startTimerLoop();
+applyFilters();
+
+$("#filters").addEventListener("click",e=>{
+  const chip=e.target.closest(".chip");
+  if(!chip) return;
+  currentFilter=chip.dataset.filter;
+  $$(".chip").forEach(c=>c.classList.toggle("active",c===chip));
+  applyFilters();
+});
+$("#search").addEventListener("input",applyFilters);
+
+["plate","mileage","price","seller","generalNotes","costNotes"].forEach(id=>{
+  $("#"+id).addEventListener("input",save);
+});
+
+$$(".verdict").forEach(btn=>btn.addEventListener("click",()=>{
+  state.verdict=state.verdict===btn.dataset.verdict ? "" : btn.dataset.verdict;
+  $$(".verdict").forEach(b=>b.classList.toggle("active",b.dataset.verdict===state.verdict));
+  save();
+}));
+
+$("#timerToggle").addEventListener("click",()=>{
+  state.timerRunning=!state.timerRunning;
+  state.timerUpdatedAt=Date.now();
+  save();startTimerLoop();
+});
+$("#timerReset").addEventListener("click",()=>{
+  state.timerRunning=false;state.timerRemaining=7200;state.timerUpdatedAt=null;
+  save();startTimerLoop();
+});
+
+$("#exportBtn").addEventListener("click",async()=>{
+  const text=buildExport();
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Resumen copiado");
+  }catch(e){
+    const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`inspeccion-${$("#plate").value.replace(/\s/g,"-")}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Resumen descargado");
+  }
+});
+$("#printBtn").addEventListener("click",()=>window.print());
+
+$("#clearBtn").addEventListener("click",()=>{
+  if(confirm("¿Borrar todos los resultados, notas y el cronómetro?")){
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){save();}
+  else if(state.timerRunning && state.timerUpdatedAt){
+    const elapsed=Math.floor((Date.now()-state.timerUpdatedAt)/1000);
+    state.timerRemaining-=elapsed;
+    state.timerUpdatedAt=Date.now();
+    save();updateTimer();
+  }
+});
+window.addEventListener("beforeunload",save);
+</script>
+</body>
+</html>
