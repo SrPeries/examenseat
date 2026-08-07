@@ -72,6 +72,12 @@
     }
     h1{margin:.35rem 0 .25rem;font-size:clamp(1.7rem,5vw,3.15rem);line-height:1.02}
     .subtitle{margin:0;color:var(--muted);max-width:760px;line-height:1.5}
+    .car-switcher{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;position:relative;z-index:1}
+    .car-tab{border:1px solid var(--line);background:rgba(4,8,17,.4);color:var(--text);border-radius:16px;padding:13px 14px;text-align:left;cursor:pointer;transition:.18s ease}
+    .car-tab:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.2)}
+    .car-tab.active{border-color:var(--accent);background:linear-gradient(135deg,rgba(110,231,255,.13),rgba(139,92,246,.14));box-shadow:inset 0 0 0 1px rgba(110,231,255,.08)}
+    .car-tab strong{display:block;font-size:.9rem;line-height:1.25}
+    .car-tab span{display:block;color:var(--muted);font-size:.72rem;margin-top:5px}
     .vehicle-grid{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
@@ -269,6 +275,7 @@
       .shell{padding-inline:10px}
       header{padding:18px}
       .vehicle-grid{grid-template-columns:1fr 1fr}
+      .car-switcher{grid-template-columns:1fr}
       .stat-row{grid-template-columns:repeat(2,1fr)}
       summary{grid-template-columns:auto 1fr}
       .phase-score{grid-column:2;text-align:left}
@@ -299,13 +306,15 @@
   <main class="shell">
     <header class="glass">
       <div class="eyebrow">Inspección de compra · 2 horas</div>
-      <h1>SEAT León ST 1.4 TSI ACT</h1>
-      <p class="subtitle">Checklist práctica para revisar el coche en casa del propietario, registrar dudas y salir con una decisión ordenada.</p>
+      <h1 id="vehicleTitle">SEAT León ST 1.4 TSI ACT</h1>
+      <p class="subtitle">Dos coches, dos inspecciones independientes. Cambia de vehículo sin perder resultados, notas ni cronómetro.</p>
+
+      <nav class="car-switcher" id="carSwitcher" aria-label="Coche que vas a inspeccionar"></nav>
 
       <div class="vehicle-grid">
-        <div class="field"><label>Matrícula</label><input id="plate" value="6251 JKS" /></div>
-        <div class="field"><label>Kilometraje anunciado</label><input id="mileage" value="97.000 km" /></div>
-        <div class="field"><label>Precio</label><input id="price" value="12.300 €" /></div>
+        <div class="field"><label>Matrícula</label><input id="plate" /></div>
+        <div class="field"><label>Kilometraje anunciado</label><input id="mileage" /></div>
+        <div class="field"><label>Precio</label><input id="price" /></div>
         <div class="field"><label>Vendedor / ubicación</label><input id="seller" placeholder="Nombre o localidad" /></div>
       </div>
     </header>
@@ -611,18 +620,38 @@ const phases = [
   }
 ];
 
-const STORAGE_KEY = "seat-leon-checklist-v1";
-let state = {
+const STORAGE_KEY = "seat-leon-comparador-v2";
+const LEGACY_STORAGE_KEY = "seat-leon-checklist-v1";
+const vehicles = {
+  act: {
+    shortName:"León ST 1.4 TSI ACT FR Plus",
+    title:"SEAT León ST 1.4 TSI ACT FR Plus",
+    meta:"97.000 km · 12.300 € · particular",
+    defaults:{plate:"6251 JKS",mileage:"97.000 km",price:"12.300 €",seller:""}
+  },
+  style: {
+    shortName:"León ST 1.4 TSI Style Adv",
+    title:"SEAT León ST 1.4 TSI StSp Style Adv",
+    meta:"2018 · 116.000 km · 12.950 € · Barcelona",
+    defaults:{plate:"",mileage:"116.000 km",price:"12.950 €",seller:"Barcelona"}
+  }
+};
+function blankState(vehicleId){
+  return {
   answers:{},
   notes:{},
-  fields:{},
+  fields:{...vehicles[vehicleId].defaults},
   generalNotes:"",
   costNotes:"",
   verdict:"",
   timerRemaining:7200,
   timerRunning:false,
   timerUpdatedAt:null
-};
+  };
+}
+let activeVehicle = "act";
+let states = {act:blankState("act"),style:blankState("style")};
+let state = states[activeVehicle];
 let currentFilter = "all";
 let timerInterval = null;
 
@@ -634,7 +663,17 @@ function itemId(p,i){ return `p${p}-i${i}`; }
 function load(){
   try{
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if(saved) state = {...state, ...saved};
+    if(saved){
+      activeVehicle = vehicles[saved.activeVehicle] ? saved.activeVehicle : "act";
+      Object.keys(vehicles).forEach(id=>{
+        states[id] = {...blankState(id), ...(saved.vehicles?.[id] || {})};
+        states[id].fields = {...vehicles[id].defaults, ...(saved.vehicles?.[id]?.fields || {})};
+      });
+    }else{
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "null");
+      if(legacy) states.act = {...blankState("act"), ...legacy, fields:{...vehicles.act.defaults,...(legacy.fields||{})}};
+    }
+    state=states[activeVehicle];
   }catch(e){}
   if(state.timerRunning && state.timerUpdatedAt){
     const elapsed = Math.floor((Date.now() - state.timerUpdatedAt)/1000);
@@ -653,10 +692,41 @@ function save(){
   state.generalNotes = $("#generalNotes").value;
   state.costNotes = $("#costNotes").value;
   if(state.timerRunning) state.timerUpdatedAt = Date.now();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  states[activeVehicle]=state;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({activeVehicle,vehicles:states}));
+}
+
+function renderCarSwitcher(){
+  $("#carSwitcher").innerHTML=Object.entries(vehicles).map(([id,v])=>`
+    <button class="car-tab ${id===activeVehicle?"active":""}" data-vehicle="${id}" aria-pressed="${id===activeVehicle}">
+      <strong>${v.shortName}</strong><span>${v.meta}</span>
+    </button>`).join("");
+  $("#vehicleTitle").textContent=vehicles[activeVehicle].title;
+}
+
+function switchVehicle(id){
+  if(!vehicles[id] || id===activeVehicle) return;
+  save();
+  clearInterval(timerInterval);
+  activeVehicle=id;
+  state=states[id];
+  if(state.timerRunning && state.timerUpdatedAt){
+    state.timerRemaining-=Math.floor((Date.now()-state.timerUpdatedAt)/1000);
+    state.timerUpdatedAt=Date.now();
+  }
+  currentFilter="all";
+  renderCarSwitcher();
+  render();
+  $("#search").value="";
+  $$(".chip").forEach(c=>c.classList.toggle("active",c.dataset.filter==="all"));
+  startTimerLoop();
+  applyFilters();
+  save();
+  toast(`Inspección: ${vehicles[id].shortName}`);
 }
 
 function render(){
+  renderCarSwitcher();
   const list = $("#phaseList");
   list.innerHTML = phases.map((phase,p) => `
     <details class="phase" data-phase="${p}" ${p < 2 ? "open" : ""}>
@@ -673,9 +743,10 @@ function render(){
           const id=itemId(p,i);
           const status=state.answers[id] || "pending";
           const note=state.notes[id] || "";
+          const displayText=vehicleText(text);
           return `
-            <article class="check-item" data-id="${id}" data-status="${status}" data-critical="${critical}" data-text="${escapeHtml(text.toLowerCase())}">
-              <div class="item-text">${text}${critical ? '<span class="critical">Clave</span>' : ''}</div>
+            <article class="check-item" data-id="${id}" data-status="${status}" data-critical="${critical}" data-text="${escapeHtml(displayText.toLowerCase())}">
+              <div class="item-text">${displayText}${critical ? '<span class="critical">Clave</span>' : ''}</div>
               <div class="item-actions" aria-label="Resultado">
                 <button class="status-btn ok ${status==="ok"?"active":""}" data-status-set="ok" title="Bien">✓</button>
                 <button class="status-btn doubt ${status==="doubt"?"active":""}" data-status-set="doubt" title="Duda">?</button>
@@ -702,12 +773,25 @@ function escapeHtml(value){
   }[c]));
 }
 
+function vehicleText(text){
+  if(activeVehicle!=="style") return text;
+  return text
+    .replace("Confirmar que la matrícula es 6251 JKS.","Anotar la matrícula y comprobar que coincide con toda la documentación.")
+    .replace("SEAT León ST 1.4 TSI ACT FR Plus manual","SEAT León ST 1.4 TSI StSp Style Adv manual")
+    .replace(/97\.000 km/g,"116.000 km")
+    .replace("ACT y techo panorámico","turbo, embrague y equipamiento anunciado")
+    .replace("el ACT no provoca tirones ni vibraciones","la entrega de potencia no presenta tirones ni vibraciones")
+    .replace("el techo panorámico cruje","el interior presenta crujidos")
+    .replace("Probar el control de crucero adaptativo y cambiar la distancia.","Probar el control de crucero y sus mandos, si está equipado.")
+    .replace("Comprobar que el ACC acelera y frena suavemente y no muestra error del radar.","Comprobar que las ayudas a la conducción anunciadas funcionan sin errores.");
+}
+
 function applyStateToFields(){
   const f=state.fields || {};
-  if(f.plate) $("#plate").value=f.plate;
-  if(f.mileage) $("#mileage").value=f.mileage;
-  if(f.price) $("#price").value=f.price;
-  if(f.seller) $("#seller").value=f.seller;
+  $("#plate").value=f.plate || "";
+  $("#mileage").value=f.mileage || "";
+  $("#price").value=f.price || "";
+  $("#seller").value=f.seller || "";
   $("#generalNotes").value=state.generalNotes || "";
   $("#costNotes").value=state.costNotes || "";
   $$(".verdict").forEach(b=>b.classList.toggle("active",b.dataset.verdict===state.verdict));
@@ -858,7 +942,7 @@ function toast(text){
 function buildExport(){
   const s=stats();
   const lines=[
-    "CHECKLIST DE INSPECCIÓN — SEAT LEÓN ST 1.4 TSI ACT",
+    `CHECKLIST DE INSPECCIÓN — ${vehicles[activeVehicle].title.toUpperCase()}`,
     `Matrícula: ${$("#plate").value}`,
     `Kilometraje: ${$("#mileage").value}`,
     `Precio: ${$("#price").value}`,
@@ -873,7 +957,7 @@ function buildExport(){
       const id=itemId(p,i);
       const status=state.answers[id]||"pending";
       const icon={ok:"[BIEN]",doubt:"[DUDA]",fail:"[FALLO]",pending:"[PENDIENTE]"}[status];
-      lines.push(`${icon}${critical?" [CLAVE]":""} ${text}`);
+      lines.push(`${icon}${critical?" [CLAVE]":""} ${vehicleText(text)}`);
       if(state.notes[id]) lines.push(`  Nota: ${state.notes[id]}`);
     });
     lines.push("");
@@ -900,6 +984,10 @@ $("#filters").addEventListener("click",e=>{
   currentFilter=chip.dataset.filter;
   $$(".chip").forEach(c=>c.classList.toggle("active",c===chip));
   applyFilters();
+});
+$("#carSwitcher").addEventListener("click",e=>{
+  const tab=e.target.closest("[data-vehicle]");
+  if(tab) switchVehicle(tab.dataset.vehicle);
 });
 $("#search").addEventListener("input",applyFilters);
 
@@ -941,9 +1029,11 @@ $("#exportBtn").addEventListener("click",async()=>{
 $("#printBtn").addEventListener("click",()=>window.print());
 
 $("#clearBtn").addEventListener("click",()=>{
-  if(confirm("¿Borrar todos los resultados, notas y el cronómetro?")){
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
+  if(confirm(`¿Borrar los resultados, notas y cronómetro de ${vehicles[activeVehicle].shortName}?`)){
+    states[activeVehicle]=blankState(activeVehicle);
+    state=states[activeVehicle];
+    save();render();startTimerLoop();applyFilters();
+    toast("Inspección borrada");
   }
 });
 
